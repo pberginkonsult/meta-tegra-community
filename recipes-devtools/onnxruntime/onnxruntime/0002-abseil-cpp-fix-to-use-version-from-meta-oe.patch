@@ -1,0 +1,35 @@
+From db7f61232e4153b70a5a936ad8f8f4fd53ea3f09 Mon Sep 17 00:00:00 2001
+From: Peter Bergin <peter@berginkonsult.se>
+Date: Fri, 9 Jan 2026 18:53:43 +0100
+Subject: [PATCH] abseil-cpp: fix to use version from meta-oe
+
+In current upstream layer version 20250814 of abseil-cpp is
+available.
+
+Upstream-Status: Inappropriate [OE-specific]
+
+---
+ cmake/external/abseil-cpp.cmake | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/cmake/external/abseil-cpp.cmake b/cmake/external/abseil-cpp.cmake
+index cd93a8da00..26fe198590 100644
+--- a/cmake/external/abseil-cpp.cmake
++++ b/cmake/external/abseil-cpp.cmake
+@@ -28,7 +28,7 @@ onnxruntime_fetchcontent_declare(
+     URL_HASH SHA1=${DEP_SHA1_abseil_cpp}
+     EXCLUDE_FROM_ALL
+     PATCH_COMMAND ${ABSL_PATCH_COMMAND}
+-    FIND_PACKAGE_ARGS 20240722 NAMES absl
++    FIND_PACKAGE_ARGS 20250814 NAMES absl
+ )
+
+ onnxruntime_fetchcontent_makeavailable(abseil_cpp)
+@@ -114,7 +114,6 @@ absl::absl_check
+ absl::hash_function_defaults
+ absl::function_ref
+ absl::city
+-absl::low_level_hash
+ absl::fixed_array
+ absl::variant
+ absl::meta

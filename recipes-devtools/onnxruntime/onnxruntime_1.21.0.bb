@@ -16,6 +16,7 @@ SRCREV_FORMAT = "onnxruntime_libeigen_cudnn_frontend"
 
 SRC_URI += " \
     file://0001-Use-external-library-dependencies.patch \
+    file://0002-abseil-cpp-fix-to-use-version-from-meta-oe.patch \
 "
 
 COMPATIBLE_MACHINE = "(cuda)"
