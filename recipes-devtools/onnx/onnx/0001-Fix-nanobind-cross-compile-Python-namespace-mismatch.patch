@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter Bergin <peter.bergin@1x.tech>
+Date: Sat, 8 Mar 2026 00:00:00 +0000
+Subject: [PATCH] Fix nanobind cross-compile Python namespace mismatch
+
+nanobind-config.cmake requires Python_Development_FOUND and uses the
+Python::SABIModule / Python::Module cmake targets. In cross-compile mode
+ONNX's cmake only calls:
+
+  find_package(Python REQUIRED COMPONENTS Interpreter)  <- native interpreter
+  find_package(Python3 REQUIRED COMPONENTS Development.Module SABIModule)  <- target
+
+so Python_Development_FOUND is never set and Python::SABIModule never
+created, causing nanobind's config.cmake to abort.
+
+Fix: after finding Python3 with Development components, forward the
+relevant variables and create INTERFACE IMPORTED targets in the Python
+namespace so both nanobind's config check and nanobind_add_module() work.
+
+Upstream-Status: Inappropriate [OE cross-compile specific]
+Signed-off-by: Peter Bergin <peter.bergin@1x.tech>
+---
+ CMakeLists.txt | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 584c0419a..53ea84caa 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -139,6 +139,28 @@ if(CMAKE_CROSSCOMPILING)
+   # https://gitlab.kitware.com/cmake/cmake/-/issues/25145
+   if(ONNX_BUILD_PYTHON)
+     find_package(Python3 REQUIRED COMPONENTS ${python_dev_component})
++    # Bridge Python3 development into the Python namespace for nanobind.
++    # nanobind-config.cmake checks Python_Development_FOUND and nanobind_add_module()
++    # uses Python::SABIModule / Python::Module, but in cross-compile mode cmake only
++    # finds Python with the Interpreter component (native). Python3 is found with
++    # Development.* components (target sysroot). Forward the relevant state so nanobind
++    # config passes and the correct target-sysroot include dirs are used for compilation.
++    set(Python_Development_FOUND "${Python3_Development_FOUND}")
++    set(Python_INCLUDE_DIRS "${Python3_INCLUDE_DIRS}")
++    set(Python_VERSION "${Python3_VERSION}")
++    set(Python_VERSION_MAJOR "${Python3_VERSION_MAJOR}")
++    set(Python_VERSION_MINOR "${Python3_VERSION_MINOR}")
++    set(Python_VERSION_PATCH "${Python3_VERSION_PATCH}")
++    if(TARGET Python3::SABIModule AND NOT TARGET Python::SABIModule)
++      add_library(Python::SABIModule IMPORTED INTERFACE GLOBAL)
++      set_property(TARGET Python::SABIModule PROPERTY
++        INTERFACE_INCLUDE_DIRECTORIES "${Python3_INCLUDE_DIRS}")
++    endif()
++    if(TARGET Python3::Module AND NOT TARGET Python::Module)
++      add_library(Python::Module IMPORTED INTERFACE GLOBAL)
++      set_property(TARGET Python::Module PROPERTY
++        INTERFACE_INCLUDE_DIRECTORIES "${Python3_INCLUDE_DIRS}")
++    endif()
+   endif()
+   find_package(Python REQUIRED COMPONENTS Interpreter)
+   set(ONNX_PYTHON_INTERPRETER Python::Interpreter)
+--
+2.34.1
